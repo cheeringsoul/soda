@@ -2,20 +2,19 @@ package com.soda;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 
-interface Callback <E extends Event>{
-    void call(E event);
+interface Callback {
+    void call(Event event);
 }
 
 
 public class Engine {
     private static final int QUEUE_CAPACITY = 10;
-    private final Map<Class<?>, Callback> eventHandlers = new HashMap<>();
+    private final Map<Class<?>, List<Callback>> eventHandlers = new HashMap<>();
     private final BlockingQueue<Event> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 
     public <T extends Application, E extends Event> void addApplication(Class<T> clazz) {
@@ -35,13 +34,14 @@ public class Engine {
                     if (!Event.class.isAssignableFrom(parameters[0].getType())) {
                         throw new RuntimeException("Method with EventHandler annotation must have exactly one parameter of type Event");
                     }
-                    eventHandlers.put(parameters[0].getType(), (Event event) -> {
+                    eventHandlers.computeIfAbsent(parameters[0].getType(), k -> new ArrayList<>()).add((Event event) -> {
                         try {
                             method.invoke(instance, event);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     });
+
                 }
             }
         } catch (Exception e) {
@@ -58,13 +58,18 @@ public class Engine {
     }
 
     public void run() {
+        pubEvent(new ExampleEvent("1", "Example Event"));
+        pubEvent(new ExampleEvent1("2", "Example Event 1"));
         while (true) {
             try {
                 Event event = queue.take();
-                Callback callback = eventHandlers.get(event.getClass());
-                if (callback != null) {
+                List<Callback> callbacks = eventHandlers.get(event.getClass());
+                if (callbacks == null) {
+                    continue;
+                }
+                for (Callback callback : callbacks) {
                     try {
-                        callback.call( event);
+                        callback.call(event);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -78,7 +83,7 @@ public class Engine {
 
     public static void main(String[] args) {
         Engine engine = new Engine();
-        engine.addApplication(Application.class);
+        engine.addApplication(ExampleApplication.class);
         engine.run();
     }
 }

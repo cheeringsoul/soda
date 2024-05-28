@@ -1,5 +1,7 @@
 package com.soda;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
@@ -11,7 +13,7 @@ interface Callback {
     void call(Event event);
 }
 
-
+@Slf4j
 public class Engine {
     private static final int QUEUE_CAPACITY = 10;
     private final Map<Class<?>, List<Callback>> eventHandlers = new HashMap<>();
@@ -38,14 +40,14 @@ public class Engine {
                         try {
                             method.invoke(instance, event);
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            log.error("Error invoking method", e);
                         }
                     });
 
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error adding application", e);
         }
     }
 
@@ -53,7 +55,7 @@ public class Engine {
         try {
             queue.put(event);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("Error publishing event", e);
         }
     }
 
@@ -71,11 +73,12 @@ public class Engine {
                     try {
                         callback.call(event);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("Error calling callback", e);
                     }
                 }
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                log.error("Error running engine", e);
+                break;
             }
         }
 

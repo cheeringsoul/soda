@@ -7,19 +7,29 @@ import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 interface Callback {
     void call(Event event);
 }
 
+
 @Slf4j
 public class Engine {
     private static final int QUEUE_CAPACITY = 10;
     private final Map<Class<?>, List<Callback>> eventHandlers = new HashMap<>();
     private final BlockingQueue<Event> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+    ExecutorService executorService;
+    public static final Engine INSTANCE = new Engine();
 
-    public <T extends Application, E extends Event> void addApplication(Class<T> clazz) {
+    private Engine() {
+        int cpuCores = Runtime.getRuntime().availableProcessors();
+        executorService = Executors.newFixedThreadPool(cpuCores);
+    }
+
+    public <T extends Application> void addApplication(Class<T> clazz) {
         try {
             Method[] declaredMethods = clazz.getDeclaredMethods();
             T instance = clazz.getDeclaredConstructor().newInstance();
@@ -62,6 +72,7 @@ public class Engine {
     public void run() {
         pubEvent(new ExampleEvent("1", "Example Event"));
         pubEvent(new ExampleEvent1("2", "Example Event 1"));
+
         while (true) {
             try {
                 Event event = queue.take();
@@ -85,8 +96,7 @@ public class Engine {
     }
 
     public static void main(String[] args) {
-        Engine engine = new Engine();
-        engine.addApplication(ExampleApplication.class);
-        engine.run();
+        Engine.INSTANCE.addApplication(ExampleApplication.class);
+        Engine.INSTANCE.run();
     }
 }

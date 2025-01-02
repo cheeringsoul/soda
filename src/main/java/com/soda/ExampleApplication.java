@@ -1,5 +1,7 @@
 package com.soda;
 
+import com.soda.annotations.EventHandler;
+
 public class ExampleApplication extends Application {
 
     @EventHandler

@@ -1,6 +1,10 @@
 package com.soda;
 
+import com.soda.annotations.EventHandler;
+import com.soda.annotations.AutoLoad;
 import lombok.extern.slf4j.Slf4j;
+import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -52,6 +56,18 @@ public class Engine {
             }
         }
 
+    }
+
+    private void autoLoadApplications(String packageName) {
+        Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
+        Set<Class<?>> appClasses = reflections.getTypesAnnotatedWith(AutoLoad.class);
+        for (Class<?> appClass : appClasses) {
+            if (Application.class.isAssignableFrom(appClass)) {
+                @SuppressWarnings("unchecked")
+                Class<? extends Application> validAppClass = (Class<? extends Application>) appClass;
+                addApplication(validAppClass);
+            }
+        }
     }
 
     public void pubEvent(Event event) {

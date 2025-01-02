@@ -7,19 +7,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.concurrent.*;
-
-
-interface Callback {
-    void call(Event event);
-}
-
+import java.util.function.Consumer;
 
 @Slf4j
 public class Engine {
-    private final Map<Class<?>, List<Callback>> eventHandlers = new HashMap<>();
-    private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
-    ExecutorService executorService;
     public static final Engine INSTANCE = new Engine();
+    private final ExecutorService executorService;
+    private final Map<Class<?>, List<Consumer<Event>>> messageHandlerMap = new HashMap<>();
 
     private Engine() {
         int cpuCores = Runtime.getRuntime().availableProcessors();
@@ -31,7 +25,8 @@ public class Engine {
         T instance = null;
         try {
             instance = clazz.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
         instance.setEngine(this);
@@ -47,7 +42,7 @@ public class Engine {
                     throw new RuntimeException("Method with EventHandler annotation must have exactly one parameter of type Event");
                 }
                 final T finalInstance = instance;
-                eventHandlers.computeIfAbsent(parameters[0].getType(), k -> new ArrayList<>()).add((Event event) -> {
+                messageHandlerMap.computeIfAbsent(parameters[0].getType(), k -> new ArrayList<>()).add((Event event) -> {
                     try {
                         method.invoke(finalInstance, event);
                     } catch (Exception e) {
@@ -60,35 +55,21 @@ public class Engine {
     }
 
     public void pubEvent(Event event) {
-        queue.add(event);
+        executorService.submit(() -> messageHandlerMap.get(event.getClass()).forEach(consumer -> consumer.accept(event)));
     }
 
     public void run() {
-        pubEvent(new ExampleEvent("1", "Example Event"));
-        pubEvent(new ExampleEvent1("2", "Example Event 1"));
+        Thread.yield();
+    }
 
-        while (true) {
-            Event event = queue.poll();
-            if (event == null) {
-                continue;
-            }
-            List<Callback> callbacks = eventHandlers.get(event.getClass());
-            if (callbacks == null) {
-                continue;
-            }
-            for (Callback callback : callbacks) {
-                try {
-                    callback.call(event);
-                } catch (Exception e) {
-                    log.error("Error calling callback", e);
-                }
-            }
-        }
-
+    public void shutdown() {
+        executorService.shutdown();
     }
 
     public static void main(String[] args) {
         Engine.INSTANCE.addApplication(ExampleApplication.class);
+        Engine.INSTANCE.pubEvent(new ExampleEvent("1", "Example Event"));
+        Engine.INSTANCE.pubEvent(new ExampleEvent1("2", "Example Event 1"));
         Engine.INSTANCE.run();
     }
 }

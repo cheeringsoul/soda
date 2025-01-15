@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public class ExampleEvent extends Event {
-    private String eventID;
-    private String eventName;
+    private final String eventID;
+    private final String eventName;
 
     public ExampleEvent(String eventID, String eventName) {
         super();

@@ -6,6 +6,7 @@ import lombok.Setter;
 public class Application {
     protected Engine engine;
 
+    @SuppressWarnings("unused")
     public void pubEvent(Event event) {
         engine.pubEvent(event);
     }

@@ -77,6 +77,7 @@ public class Engine {
         }
     }
 
+    @SuppressWarnings("unused")
     private void autoLoadApplications(String packageName) {
         Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
         Set<Class<?>> appClasses = reflections.getTypesAnnotatedWith(AutoLoad.class);
@@ -99,6 +100,7 @@ public class Engine {
         }
     }
 
+    @SuppressWarnings("unused")
     public void shutdown() {
         executorService.shutdown();
     }

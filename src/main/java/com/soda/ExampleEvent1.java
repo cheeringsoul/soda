@@ -13,7 +13,6 @@ public class ExampleEvent1 extends Event {
     }
 
     public ExampleEvent1(String eventID, String eventName) {
-        super();
         this.eventID = eventID;
         this.eventName = eventName;
     }

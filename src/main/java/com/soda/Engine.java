@@ -27,6 +27,10 @@ public class Engine {
         executorService = Executors.newFixedThreadPool(cpuCores);
     }
 
+    public static <T extends Application> void addApplication(Class<T> app) {
+        INSTANCE.addApp(app);
+    }
+
     private <T extends Application> void addEventHandler(Method method, T instance) {
         if (method.isAnnotationPresent(EventHandler.class)) {
             log.info("Add method {} of {}.", method.getName(), instance.getClass().getName());
@@ -58,7 +62,7 @@ public class Engine {
         });
     }
 
-    public <T extends Application> void addApplication(Class<T> clazz) {
+    private <T extends Application> void addApp(Class<T> clazz) {
         Method[] declaredMethods = clazz.getDeclaredMethods();
         T instance;
         try {
@@ -78,7 +82,6 @@ public class Engine {
         }
     }
 
-    @SuppressWarnings("unused")
     private void autoLoadApplications(String packageName) {
         Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
         Set<Class<?>> appClasses = reflections.getTypesAnnotatedWith(AutoLoad.class);
@@ -86,7 +89,7 @@ public class Engine {
             if (Application.class.isAssignableFrom(appClass)) {
                 @SuppressWarnings("unchecked")
                 Class<? extends Application> validAppClass = (Class<? extends Application>) appClass;
-                addApplication(validAppClass);
+                addApp(validAppClass);
             }
         }
     }
@@ -101,15 +104,7 @@ public class Engine {
         }
     }
 
-    @SuppressWarnings("unused")
     public void shutdown() {
         executorService.shutdown();
-    }
-
-    public static void main(String[] args) {
-        Engine.INSTANCE.addApplication(ExampleApplication.class);
-        Engine.INSTANCE.pubEvent(new ExampleEvent("1", "Example Event"));
-        Engine.INSTANCE.pubEvent(new ExampleEvent1("2", "Example Event 1"));
-        Engine.INSTANCE.run();
     }
 }

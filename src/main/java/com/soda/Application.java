@@ -1,10 +1,11 @@
 package com.soda;
 
-import lombok.Setter;
-
-@Setter
 public class Application {
     protected Engine engine;
+
+    public void setEngine(Engine engine) {
+        this.engine = engine;
+    }
 
     @SuppressWarnings("unused")
     public void pubEvent(Event event) {

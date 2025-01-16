@@ -3,9 +3,10 @@ package com.soda;
 import com.soda.annotations.EventHandler;
 import com.soda.annotations.AutoLoad;
 import com.soda.annotations.Task;
-import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -14,8 +15,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-@Slf4j
 public class Engine {
+    private static final Logger log = LoggerFactory.getLogger(Engine.class);
     public static final Engine INSTANCE = new Engine();
     private final ExecutorService executorService;
     private final Map<Class<?>, List<Consumer<Event>>> messageHandlerMap = new HashMap<>();
